@@ -6,9 +6,9 @@
 </head>
 
 <body>
-<h1>{{.Title}}</h1>
+<h1>Editing {{.Title}}</h1>
 <form action="/modify/{{.Title}}" method="post">
-  <textarea name="content">{{.ContentHtml}}</textarea>
+  <textarea name="content" rows="40" cols="80">{{.Content}}</textarea>
   <br>
   <input type="submit">
 </form>

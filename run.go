@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"html/template"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/jaeyeom/gofiletable/table"
+	"github.com/jaeyeom/orgmode-wiki/parser"
 )
 
 var (
@@ -20,7 +22,8 @@ var wikiTable *table.Table
 
 type document struct {
 	Title       string
-	ContentHtml string
+	Content     string
+	ContentHTML template.HTML
 }
 
 // viewHandler is view/edit page handler.
@@ -38,9 +41,16 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	content, _ := wikiTable.Get([]byte(title))
 	w.Header().Set("Content-Type", "text/html")
 	t, _ := template.ParseFiles(fmt.Sprintf("template/%s.html", action))
+
+	p := parser.Parser{}
+	p.ParseDocument(bytes.NewBuffer(content))
+	contentHTML := &bytes.Buffer{}
+	p.Write(parser.NewHTMLWriter(contentHTML), false)
+
 	t.Execute(w, document{
 		Title: title,
-		ContentHtml: string(content),
+		Content: string(content),
+		ContentHTML: template.HTML(contentHTML),
 	})
 }
 
