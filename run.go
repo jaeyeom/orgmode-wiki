@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	addr = flag.String("addr", ":8000", "address of server")
+	addr   = flag.String("addr", ":8000", "address of server")
 	dbPath = flag.String("db_path", "/tmp/wiki-db/", "Path to wiki db")
 )
 
@@ -33,7 +33,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/view/Main", http.StatusSeeOther)
 		return
 	}
-	action := r.URL.Path[1:5]  // view or edit
+	action := r.URL.Path[1:5] // view or edit
 	title := r.URL.Path[6:]
 	if r.Method != "GET" || title == "" {
 		return
@@ -48,9 +48,9 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	p.Write(parser.NewHTMLWriter(contentHTML), false)
 
 	t.Execute(w, document{
-		Title: title,
-		Content: string(content),
-		ContentHTML: template.HTML(contentHTML),
+		Title:       title,
+		Content:     string(content),
+		ContentHTML: template.HTML(contentHTML.String()),
 	})
 }
 
@@ -80,5 +80,8 @@ func main() {
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/edit/", viewHandler)
 	http.HandleFunc("/modify/", modifyHandler)
-	http.ListenAndServe(*addr, nil)
+	log.Printf("Server being ready: %s\n", *addr)
+	if err := http.ListenAndServe(*addr, nil); err != nil {
+		log.Println(err)
+	}
 }

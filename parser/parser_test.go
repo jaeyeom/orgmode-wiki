@@ -60,5 +60,5 @@ func ExampleComplexHTML() {
 	p.ParseDocument(r)
 	p.Write(NewHTMLWriter(os.Stdout), false)
 	// Output:
-	// <h1>Test</h1><h2>Test</h2><p><a href="hello"></a>, <a href="http://world">world</a></p>
+	// <h1>Test</h1><h2>Test</h2><p><a href="/view/hello">hello</a>, <a href="http://world">world</a></p>
 }

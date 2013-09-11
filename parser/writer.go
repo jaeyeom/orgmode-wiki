@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -62,6 +62,9 @@ func (w HTMLWriter) StartElement(node *Element) {
 	case "Link":
 		name = "a"
 		attrs["href"] = node.Attr["link"]
+		if strings.Index(attrs["href"], ":") == -1 {
+			attrs["href"] = "/view/" + attrs["href"]
+		}
 	case "Paragraph":
 		name = "p"
 	case "Header":
@@ -86,6 +89,9 @@ func (w HTMLWriter) StartElement(node *Element) {
 
 func (w HTMLWriter) Text(node *Element) {
 	fmt.Fprintf(w, node.Text)
+	if node.Text == "" && node.Parent.Name == "Link" {
+		fmt.Fprintf(w, node.Parent.Attr["link"])
+	}
 }
 
 func (w HTMLWriter) EndElement(node *Element) {
