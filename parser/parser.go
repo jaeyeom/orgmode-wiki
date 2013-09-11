@@ -249,21 +249,20 @@ func (p *Parser) ParseLink(r io.ByteScanner) {
 
 // WriteXML writes the parse tree to w in XML. If pretty is true, it
 // prints out as indented XML.
-func (p *Parser) WriteXML(w io.Writer, pretty bool) {
+func (p *Parser) Write(w Writer, pretty bool) {
 	if p.root == nil {
 		return
 	}
 	current := p.root
-	writer := NewXMLWriter(w)
 	var writeFunc func(node *Element, level int)
 	writeFunc = func(node *Element, level int) {
 		if node.Name == "Text" {
-			writer.Text(node)
+			w.Text(node)
 		}
 		for i := 0; i < level; i++ {
 			fmt.Fprint(w, "  ")
 		}
-		writer.StartElement(node)
+		w.StartElement(node)
 		hasText := false
 		for _, child := range node.Children {
 			if child.Name == "Text" {
@@ -291,7 +290,7 @@ func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 		if pretty && !hasText && node.Name != "Text" {
 			fmt.Fprintln(w)
 		}
-		writer.EndElement(node)
+		w.EndElement(node)
 	}
 	writeFunc(current, 0)
 }

@@ -15,7 +15,7 @@ func ExampleHeaderAndParagraph() {
 	p := Parser{}
 	r := bytes.NewBufferString(wiki)
 	p.ParseDocument(r)
-	p.WriteXML(os.Stdout, true)
+	p.Write(NewXMLWriter(os.Stdout), true)
 	// Output:
 	// <Document>
 	//   <Header level="1">Header1</Header>
@@ -30,7 +30,7 @@ func ExampleLink() {
 	p := Parser{}
 	r := bytes.NewBufferString(wiki)
 	p.ParseDocument(r)
-	p.WriteXML(os.Stdout, true)
+	p.Write(NewXMLWriter(os.Stdout), true)
 	// Output:
 	// <Document>
 	//   <Paragraph>Link to <Link link="hello"></Link> or <Link link="http://www">www</Link>.</Paragraph>
@@ -43,10 +43,22 @@ func ExampleComplex() {
 	p := Parser{}
 	r := bytes.NewBufferString(wiki)
 	p.ParseDocument(r)
-	p.WriteXML(os.Stdout, true)
+	p.Write(NewXMLWriter(os.Stdout), true)
 	// Output:
 	// <Document>
 	//   <Header level="1">Test</Header>
 	//   <Paragraph><Link link="hello"></Link></Paragraph>
 	// </Document>
+}
+
+func ExampleComplexHTML() {
+	wiki := "* Test\n"
+	wiki += "** Test\n"
+	wiki += "   [[hello]], [[http://world][world]]\n"
+	p := Parser{}
+	r := bytes.NewBufferString(wiki)
+	p.ParseDocument(r)
+	p.Write(NewHTMLWriter(os.Stdout), false)
+	// Output:
+	// <h1>Test</h1><h2>Test</h2><p><a href="hello"></a>, <a href="http://world">world</a></p>
 }
