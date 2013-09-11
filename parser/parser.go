@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 )
 
 type Element struct {
@@ -252,28 +251,19 @@ func (p *Parser) ParseLink(r io.ByteScanner) {
 // prints out as indented XML.
 func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 	if p.root == nil {
-		fmt.Fprintf(w, "<nil/>")
 		return
 	}
 	current := p.root
+	writer := NewXMLWriter(w)
 	var writeFunc func(node *Element, level int)
 	writeFunc = func(node *Element, level int) {
 		if node.Type == "Text" {
-			fmt.Fprintf(w, node.Text)
-			return
-		}
-		attrs := []string{}
-		for k, v := range node.Attr {
-			attrs = append(attrs, fmt.Sprintf("%s=\"%s\"", k, v))
+			writer.Text(node)
 		}
 		for i := 0; i < level; i++ {
 			fmt.Fprint(w, "  ")
 		}
-		if len(attrs) == 0 {
-			fmt.Fprintf(w, "<%s>", node.Type)
-		} else {
-			fmt.Fprintf(w, "<%s %s>", node.Type, strings.Join(attrs, " "))
-		}
+		writer.StartElement(node)
 		hasText := false
 		for _, child := range node.Children {
 			if child.Type == "Text" {
@@ -284,7 +274,7 @@ func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 
 		prevChildType := ""
 		for _, child := range node.Children {
-			if prevChildType == "Text" && child.Type == "Text" {
+			if prevChildType == "Text" && child.Type == "Text" && child.Text != "" {
 				fmt.Fprint(w, " ")
 			}
 			if pretty && !hasText {
@@ -298,10 +288,10 @@ func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 			}
 			prevChildType = child.Type
 		}
-		if pretty && !hasText {
+		if pretty && !hasText && node.Type != "Text" {
 			fmt.Fprintln(w)
 		}
-		fmt.Fprintf(w, "</%s>", node.Type)
+		writer.EndElement(node)
 	}
 	writeFunc(current, 0)
 }
