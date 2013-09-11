@@ -10,7 +10,7 @@ type Element struct {
 	Attr     map[string]string
 	Parent   *Element
 	Children []*Element
-	Type     string
+	Name     string
 	Text     string
 }
 
@@ -22,12 +22,12 @@ type Parser struct {
 	column  int
 }
 
-func AddElement(parent *Element, typeName string) *Element {
+func AddElement(parent *Element, name string) *Element {
 	newElement := &Element{
 		Attr:     map[string]string{},
 		Parent:   parent,
 		Children: []*Element{},
-		Type:     typeName,
+		Name:     name,
 		Text:     "",
 	}
 	if parent != nil {
@@ -36,8 +36,8 @@ func AddElement(parent *Element, typeName string) *Element {
 	return newElement
 }
 
-func (p *Parser) StartElement(typeName string) {
-	p.current = AddElement(p.current, typeName)
+func (p *Parser) StartElement(name string) {
+	p.current = AddElement(p.current, name)
 }
 
 func (p *Parser) EndElement() {
@@ -94,13 +94,13 @@ func (p *Parser) ParseLine(r io.ByteScanner) {
 			level += 1
 			p.NextColumn()
 		} else if c == '\n' {
-			if p.current.Type == "Paragraph" {
+			if p.current.Name == "Paragraph" {
 				p.EndElement()
 			}
 			p.NextLine()
 			break
 		} else {
-			if p.current.Type != "Paragraph" {
+			if p.current.Name != "Paragraph" {
 				p.StartElement("Paragraph")
 			}
 			r.UnreadByte()
@@ -124,7 +124,7 @@ func (p *Parser) ParseTextLine(r io.ByteScanner) {
 			break
 		}
 		if c == ']' {
-			if p.current.Type == "Link" || (p.current.Type == "Text" && p.current.Parent.Type == "Link") {
+			if p.current.Name == "Link" || (p.current.Name == "Text" && p.current.Parent.Name == "Link") {
 				r.UnreadByte()
 				return
 			} else {
@@ -134,13 +134,13 @@ func (p *Parser) ParseTextLine(r io.ByteScanner) {
 			}
 		}
 		if c == '[' {
-			if p.current.Type == "Text" {
+			if p.current.Name == "Text" {
 				p.NextColumn()
 				p.EndElement()
 				p.ParseLink(r)
 				p.StartElement("Text")
 			} else {
-				p.AddError("ParseTextLink", "type is "+p.current.Type)
+				p.AddError("ParseTextLink", "type is "+p.current.Name)
 				p.NextColumn()
 			}
 			continue
@@ -257,7 +257,7 @@ func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 	writer := NewXMLWriter(w)
 	var writeFunc func(node *Element, level int)
 	writeFunc = func(node *Element, level int) {
-		if node.Type == "Text" {
+		if node.Name == "Text" {
 			writer.Text(node)
 		}
 		for i := 0; i < level; i++ {
@@ -266,15 +266,15 @@ func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 		writer.StartElement(node)
 		hasText := false
 		for _, child := range node.Children {
-			if child.Type == "Text" {
+			if child.Name == "Text" {
 				hasText = true
 				break
 			}
 		}
 
-		prevChildType := ""
+		prevChildName := ""
 		for _, child := range node.Children {
-			if prevChildType == "Text" && child.Type == "Text" && child.Text != "" {
+			if prevChildName == "Text" && child.Name == "Text" && child.Text != "" {
 				fmt.Fprint(w, " ")
 			}
 			if pretty && !hasText {
@@ -286,9 +286,9 @@ func (p *Parser) WriteXML(w io.Writer, pretty bool) {
 			} else {
 				writeFunc(child, 0)
 			}
-			prevChildType = child.Type
+			prevChildName = child.Name
 		}
-		if pretty && !hasText && node.Type != "Text" {
+		if pretty && !hasText && node.Name != "Text" {
 			fmt.Fprintln(w)
 		}
 		writer.EndElement(node)

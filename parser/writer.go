@@ -15,7 +15,7 @@ func NewXMLWriter(writer io.Writer) *XMLWriter {
 }
 
 func (w XMLWriter) StartElement(node *Element) {
-	if node.Type == "Text" {
+	if node.Name == "Text" {
 		return
 	}
 	attrs := []string{}
@@ -23,9 +23,9 @@ func (w XMLWriter) StartElement(node *Element) {
 		attrs = append(attrs, fmt.Sprintf("%s=\"%s\"", k, v))
 	}
 	if len(attrs) == 0 {
-		fmt.Fprintf(w.writer, "<%s>", node.Type)
+		fmt.Fprintf(w.writer, "<%s>", node.Name)
 	} else {
-		fmt.Fprintf(w.writer, "<%s %s>", node.Type, strings.Join(attrs, " "))
+		fmt.Fprintf(w.writer, "<%s %s>", node.Name, strings.Join(attrs, " "))
 	}
 }
 
@@ -34,8 +34,8 @@ func (w XMLWriter) Text(node *Element) {
 }
 
 func (w XMLWriter) EndElement(node *Element) {
-	if node.Type == "Text" {
+	if node.Name == "Text" {
 		return
 	}
-	fmt.Fprintf(w.writer, "</%s>", node.Type)
+	fmt.Fprintf(w.writer, "</%s>", node.Name)
 }
