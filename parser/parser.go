@@ -99,6 +99,9 @@ func (p *Parser) ParseLine(r io.ByteScanner) {
 			}
 			p.NextLine()
 			break
+		} else if c == '\r' {
+			// Ignore CR character.
+			p.NextColumn()
 		} else {
 			if p.current.Name != "Paragraph" {
 				p.StartElement("Paragraph")
@@ -122,6 +125,11 @@ func (p *Parser) ParseTextLine(r io.ByteScanner) {
 		if c == '\n' {
 			p.NextLine()
 			break
+		}
+		if c == '\r' {
+			// Ignore CR character.
+			p.NextColumn()
+			continue
 		}
 		if c == ']' {
 			if p.current.Name == "Link" || (p.current.Name == "Text" && p.current.Parent.Name == "Link") {
