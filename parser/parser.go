@@ -44,6 +44,32 @@ func (p *Parser) endElement() {
 	p.current = p.current.Parent
 }
 
+func (p Parser) isInElement(name string) bool {
+	current := p.current
+	for current != nil {
+		if current.Name == name {
+			return true
+		}
+		current = current.Parent
+	}
+	return false
+}
+
+func (p *Parser) openElement(name string) {
+	if !p.isInElement(name) {
+		p.startElement(name)
+	}
+}
+
+func (p *Parser) closeElement(name string) {
+	if p.isInElement(name) {
+		for p.current.Name != name {
+			p.endElement()
+		}
+		p.endElement()
+	}
+}
+
 func (p *Parser) nextColumn() {
 	p.pos += 1
 	p.column += 1
@@ -93,24 +119,21 @@ func (p *Parser) parseLine(r io.ByteScanner) {
 			return
 		}
 		if c == '*' && level == 0 {
+			p.closeElement("Paragraph")
 			r.UnreadByte()
 			p.parseHeader(r)
 		} else if c == ' ' {
 			level += 1
 			p.nextColumn()
 		} else if c == '\n' {
-			if p.current.Name == "Paragraph" {
-				p.endElement()
-			}
+			p.closeElement("Paragraph")
 			p.nextLine()
 			break
 		} else if c == '\r' {
 			// Ignore CR character.
 			p.nextColumn()
 		} else {
-			if p.current.Name != "Paragraph" {
-				p.startElement("Paragraph")
-			}
+			p.openElement("Paragraph")
 			r.UnreadByte()
 			p.startElement("Text")
 			p.current.Attr["level"] = fmt.Sprint(level)
