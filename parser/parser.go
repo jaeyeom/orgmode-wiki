@@ -314,10 +314,15 @@ func (p Parser) Write(w Writer, pretty bool) {
 			}
 		}
 
-		prevChildName := ""
+		seenText := false
 		for _, child := range node.Children {
-			if prevChildName == "Text" && child.Name == "Text" && child.Text != "" {
+			if seenText && child.Text != "" {
 				fmt.Fprint(w, " ")
+			}
+			if child.Text != "" {
+				seenText = true
+			} else if child.Name != "Text" {
+				seenText = false
 			}
 			if pretty && !hasText {
 				fmt.Fprintln(w)
@@ -328,7 +333,6 @@ func (p Parser) Write(w Writer, pretty bool) {
 			} else {
 				writeFunc(child, 0)
 			}
-			prevChildName = child.Name
 		}
 		if pretty && !hasText && node.Name != "Text" {
 			fmt.Fprintln(w)
