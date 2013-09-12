@@ -48,7 +48,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles(fmt.Sprintf("template/%s.html", action))
 
 	p := parser.Parser{}
-	p.ParseDocument(bytes.NewBuffer(content))
+	p.Parse(bytes.NewBuffer(content))
 	contentHTML := &bytes.Buffer{}
 	p.Write(parser.NewHTMLWriter(contentHTML), false)
 

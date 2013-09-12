@@ -22,7 +22,7 @@ type Parser struct {
 	column  int
 }
 
-func AddElement(parent *Element, name string) *Element {
+func addElement(parent *Element, name string) *Element {
 	newElement := &Element{
 		Attr:     map[string]string{},
 		Parent:   parent,
@@ -36,38 +36,43 @@ func AddElement(parent *Element, name string) *Element {
 	return newElement
 }
 
-func (p *Parser) StartElement(name string) {
-	p.current = AddElement(p.current, name)
+func (p *Parser) startElement(name string) {
+	p.current = addElement(p.current, name)
 }
 
-func (p *Parser) EndElement() {
+func (p *Parser) endElement() {
 	p.current = p.current.Parent
 }
 
-func (p *Parser) NextColumn() {
+func (p *Parser) nextColumn() {
 	p.pos += 1
 	p.column += 1
 }
 
-func (p *Parser) NextLine() {
+func (p *Parser) nextLine() {
 	p.pos += 1
 	p.line += 1
 	p.column = 0
 }
 
-func (p *Parser) AddError(from, msg string) {
+func (p Parser) addError(from, msg string) {
 	log.Printf("%s: %s at Line %d, Column %d\n", from, msg, p.line, p.column)
 	fmt.Printf("%s: %s at Line %d, Column %d\n", from, msg, p.line, p.column)
 }
 
-// ParseDocument parses a document.
-func (p *Parser) ParseDocument(r io.ByteScanner) {
+// Parse parses a document.
+func (p *Parser) Parse(r io.ByteScanner) {
+	p.parseDocument(r)
+}
+
+// parseDocument parses a document.
+func (p *Parser) parseDocument(r io.ByteScanner) {
 	_, err := r.ReadByte()
 	if err != nil {
 		return
 	}
 	r.UnreadByte()
-	p.root = AddElement(nil, "Document")
+	p.root = addElement(nil, "Document")
 	p.current = p.root
 	for {
 		_, err := r.ReadByte()
@@ -75,12 +80,12 @@ func (p *Parser) ParseDocument(r io.ByteScanner) {
 			break
 		}
 		r.UnreadByte()
-		p.ParseLine(r)
+		p.parseLine(r)
 	}
 }
 
-// ParseLine parses an unknown line.
-func (p *Parser) ParseLine(r io.ByteScanner) {
+// parseLine parses an unknown line.
+func (p *Parser) parseLine(r io.ByteScanner) {
 	level := 0
 	for {
 		c, err := r.ReadByte()
@@ -89,46 +94,46 @@ func (p *Parser) ParseLine(r io.ByteScanner) {
 		}
 		if c == '*' && level == 0 {
 			r.UnreadByte()
-			p.ParseHeader(r)
+			p.parseHeader(r)
 		} else if c == ' ' {
 			level += 1
-			p.NextColumn()
+			p.nextColumn()
 		} else if c == '\n' {
 			if p.current.Name == "Paragraph" {
-				p.EndElement()
+				p.endElement()
 			}
-			p.NextLine()
+			p.nextLine()
 			break
 		} else if c == '\r' {
 			// Ignore CR character.
-			p.NextColumn()
+			p.nextColumn()
 		} else {
 			if p.current.Name != "Paragraph" {
-				p.StartElement("Paragraph")
+				p.startElement("Paragraph")
 			}
 			r.UnreadByte()
-			p.StartElement("Text")
+			p.startElement("Text")
 			p.current.Attr["level"] = fmt.Sprint(level)
-			p.ParseTextLine(r)
-			p.EndElement()
+			p.parseTextLine(r)
+			p.endElement()
 		}
 	}
 }
 
-// ParseTextLine parses a text line. This does not create an element.
-func (p *Parser) ParseTextLine(r io.ByteScanner) {
+// parseTextLine parses a text line. This does not create an element.
+func (p *Parser) parseTextLine(r io.ByteScanner) {
 	for {
 		c, err := r.ReadByte()
 		if err != nil {
 			return
 		}
 		if c == '\n' {
-			p.NextLine()
+			p.nextLine()
 			break
 		}
 		if c == '\r' {
 			// Ignore CR character.
-			p.NextColumn()
+			p.nextColumn()
 			continue
 		}
 		if c == ']' {
@@ -136,86 +141,86 @@ func (p *Parser) ParseTextLine(r io.ByteScanner) {
 				r.UnreadByte()
 				return
 			} else {
-				p.AddError("ParseTextLink", "unexpected ]")
-				p.NextColumn()
+				p.addError("ParseTextLink", "unexpected ]")
+				p.nextColumn()
 				return
 			}
 		}
 		if c == '[' {
 			if p.current.Name == "Text" {
-				p.NextColumn()
-				p.EndElement()
-				p.ParseLink(r)
-				p.StartElement("Text")
+				p.nextColumn()
+				p.endElement()
+				p.parseLink(r)
+				p.startElement("Text")
 			} else {
-				p.AddError("ParseTextLink", "type is "+p.current.Name)
-				p.NextColumn()
+				p.addError("ParseTextLink", "type is "+p.current.Name)
+				p.nextColumn()
 			}
 			continue
 		}
-		p.NextColumn()
+		p.nextColumn()
 		p.current.Text += string(c)
 	}
 }
 
-// ParseHeader parses a header. Format is "* Header1" or "** Header2", etc.
-func (p *Parser) ParseHeader(r io.ByteScanner) {
-	p.StartElement("Header")
-	defer p.EndElement()
-	p.ParseHeaderBullet(r)
-	p.StartElement("Text")
-	p.ParseTextLine(r)
-	p.EndElement()
+// parseHeader parses a header. Format is "* Header1" or "** Header2", etc.
+func (p *Parser) parseHeader(r io.ByteScanner) {
+	p.startElement("Header")
+	defer p.endElement()
+	p.parseHeaderBullet(r)
+	p.startElement("Text")
+	p.parseTextLine(r)
+	p.endElement()
 }
 
-// ParseHeaderBullet parses a bullet of the header.
-func (p *Parser) ParseHeaderBullet(r io.ByteScanner) {
+// parseHeaderBullet parses a bullet of the header.
+func (p *Parser) parseHeaderBullet(r io.ByteScanner) {
 	level := 0
 	for {
 		c, err := r.ReadByte()
 		if err != nil {
-			p.AddError("ParseHeaderBullet", "unexpected EOF")
+			p.addError("ParseHeaderBullet", "unexpected EOF")
 			return
 		}
 		if c == '*' {
 			level += 1
-			p.NextColumn()
+			p.nextColumn()
 		} else if c == ' ' {
-			p.NextColumn()
+			p.nextColumn()
 			break
 		} else {
-			p.NextColumn()
-			p.AddError("ParseHeaderBullet", "* or space expected")
+			p.nextColumn()
+			p.addError("ParseHeaderBullet", "* or space expected")
 			return
 		}
 	}
 	p.current.Attr["level"] = fmt.Sprint(level)
 }
 
-// ParseLink parses a link. Format is [[link]] or [[link][text]].
-func (p *Parser) ParseLink(r io.ByteScanner) {
+// parseLink parses a link. Format is [[link]] or [[link][text]].
+func (p *Parser) parseLink(r io.ByteScanner) {
 	// Start of link is already consumed.
 	state := "start"
-	p.StartElement("Link")
-	defer p.EndElement()
+	p.startElement("Link")
+	defer p.endElement()
 	for {
 		c, err := r.ReadByte()
 		if err != nil {
-			p.AddError("ParseLink", "unexpected EOF")
+			p.addError("ParseLink", "unexpected EOF")
 			return
 		}
 		if c == '[' {
-			p.NextColumn()
+			p.nextColumn()
 			if state == "start" {
 				state = "link"
 			} else if state == "middle" {
 				state = "text"
 			} else {
-				p.AddError("ParseLink", "unexpected [")
+				p.addError("ParseLink", "unexpected [")
 				return
 			}
 		} else if c == ']' {
-			p.NextColumn()
+			p.nextColumn()
 			if state == "link" {
 				state = "middle"
 			} else if state == "text" {
@@ -225,39 +230,39 @@ func (p *Parser) ParseLink(r io.ByteScanner) {
 			} else if state == "end" {
 				return
 			} else {
-				p.AddError("ParseLink", "unexpected ]")
+				p.addError("ParseLink", "unexpected ]")
 				return
 			}
 		} else if c == ' ' {
-			p.NextColumn()
+			p.nextColumn()
 			continue
 		} else {
 			if state == "link" {
 				r.UnreadByte()
-				p.ParseTextLine(r)
+				p.parseTextLine(r)
 				p.current.Attr["link"] += p.current.Text
 				p.current.Text = ""
 			} else if state == "text" {
 				r.UnreadByte()
-				p.StartElement("Text")
-				p.ParseTextLine(r)
-				p.EndElement()
+				p.startElement("Text")
+				p.parseTextLine(r)
+				p.endElement()
 			} else {
-				p.NextColumn()
-				p.AddError("ParseLink", "unexpected character")
+				p.nextColumn()
+				p.addError("ParseLink", "unexpected character")
 				return
 			}
 		}
 	}
 	if len(p.current.Children) == 0 {
-		p.StartElement("Text")
-		p.EndElement()
+		p.startElement("Text")
+		p.endElement()
 	}
 }
 
 // WriteXML writes the parse tree to w in XML. If pretty is true, it
 // prints out as indented XML.
-func (p *Parser) Write(w Writer, pretty bool) {
+func (p Parser) Write(w Writer, pretty bool) {
 	if p.root == nil {
 		return
 	}
