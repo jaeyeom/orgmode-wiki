@@ -83,7 +83,6 @@ func (p *Parser) nextLine() {
 
 func (p Parser) addError(from, msg string) {
 	log.Printf("%s: %s at Line %d, Column %d\n", from, msg, p.line, p.column)
-	fmt.Printf("%s: %s at Line %d, Column %d\n", from, msg, p.line, p.column)
 }
 
 // Parse parses a document.
