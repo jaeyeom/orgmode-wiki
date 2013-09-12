@@ -39,6 +39,11 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	content, _ := wikiTable.Get([]byte(title))
+	if len(content) == 0 && action == "view" {
+		// Index page
+		http.Redirect(w, r, "/edit/"+title, http.StatusSeeOther)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html")
 	t, _ := template.ParseFiles(fmt.Sprintf("template/%s.html", action))
 
