@@ -200,7 +200,14 @@ func (p *Parser) parseHeaderBullet(r io.ByteScanner) {
 // parseLink parses a link. Format is [[link]] or [[link][text]].
 func (p *Parser) parseLink(r io.ByteScanner) {
 	// Start of link is already consumed.
-	state := "start"
+	const (
+		start = iota
+		link
+		middle
+		text
+		end
+	)
+	state := start
 	p.startElement("Link")
 	defer p.endElement()
 	for {
@@ -211,23 +218,23 @@ func (p *Parser) parseLink(r io.ByteScanner) {
 		}
 		if c == '[' {
 			p.nextColumn()
-			if state == "start" {
-				state = "link"
-			} else if state == "middle" {
-				state = "text"
+			if state == start {
+				state = link
+			} else if state == middle {
+				state = text
 			} else {
 				p.addError("ParseLink", "unexpected [")
 				return
 			}
 		} else if c == ']' {
 			p.nextColumn()
-			if state == "link" {
-				state = "middle"
-			} else if state == "text" {
-				state = "end"
-			} else if state == "middle" {
+			if state == link {
+				state = middle
+			} else if state == text {
+				state = end
+			} else if state == middle {
 				break
-			} else if state == "end" {
+			} else if state == end {
 				return
 			} else {
 				p.addError("ParseLink", "unexpected ]")
@@ -237,12 +244,12 @@ func (p *Parser) parseLink(r io.ByteScanner) {
 			p.nextColumn()
 			continue
 		} else {
-			if state == "link" {
+			if state == link {
 				r.UnreadByte()
 				p.parseTextLine(r)
 				p.current.Attr["link"] += p.current.Text
 				p.current.Text = ""
-			} else if state == "text" {
+			} else if state == text {
 				r.UnreadByte()
 				p.startElement("Text")
 				p.parseTextLine(r)
