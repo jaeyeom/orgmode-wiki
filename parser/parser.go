@@ -181,6 +181,36 @@ func (p *Parser) parseTextLine(r io.ByteScanner) {
 			}
 			continue
 		}
+		if c == '*' && p.current.Name == "Text" {
+			if p.isInElement("Bold") {
+				p.closeElement("Bold")
+			} else {
+				p.startElement("Bold")
+			}
+			p.startElement("Text")
+			p.nextColumn()
+			continue
+		}
+		if c == '_' && p.current.Name == "Text" {
+			if p.isInElement("Underline") {
+				p.closeElement("Underline")
+			} else {
+				p.openElement("Underline")
+			}
+			p.startElement("Text")
+			p.nextColumn()
+			continue
+		}
+		if c == '/' && p.current.Name == "Text" {
+			if p.isInElement("Italic") {
+				p.closeElement("Italic")
+			} else {
+				p.openElement("Italic")
+			}
+			p.startElement("Text")
+			p.nextColumn()
+			continue
+		}
 		p.nextColumn()
 		p.current.Text += string(c)
 	}

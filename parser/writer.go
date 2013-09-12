@@ -69,6 +69,12 @@ func (w HTMLWriter) StartElement(node *Element) {
 		name = "p"
 	case "Header":
 		name = "h" + node.Attr["level"]
+	case "Bold":
+		name = "b"
+	case "Italic":
+		name = "i"
+	case "Underline":
+		name = "u"
 	}
 	if name == "" {
 		return
@@ -103,6 +109,12 @@ func (w HTMLWriter) EndElement(node *Element) {
 		name = "p"
 	case "Header":
 		name = "h" + node.Attr["level"]
+	case "Bold":
+		name = "b"
+	case "Italic":
+		name = "i"
+	case "Underline":
+		name = "u"
 	}
 	if name == "" {
 		return
