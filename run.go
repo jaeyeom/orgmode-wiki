@@ -76,7 +76,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	var err error
-	wikiTable, err = table.Create(table.TableOption{*dbPath, nil})
+	wikiTable, err = table.Create(table.TableOption{*dbPath, nil, true})
 	if err != nil {
 		log.Println(err)
 		return
