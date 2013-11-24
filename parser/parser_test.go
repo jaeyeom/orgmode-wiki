@@ -53,14 +53,35 @@ func ExampleComplex() {
 	// </Document>
 }
 
+func ExampleExampleLine() {
+	wiki := "* Test\n"
+	wiki += "paragraph.\n"
+	wiki += ": example 1.\n"
+	wiki += "  : example 2.\n"
+	wiki += "  :normal text.\n"
+	p := Parser{}
+	r := bytes.NewBufferString(wiki)
+	p.Parse(r)
+	p.Write(NewXMLWriter(os.Stdout), true)
+	// Output:
+	// <Document>
+	//   <Header level="1">Test</Header>
+	//   <Paragraph>paragraph.</Paragraph>
+	//   <Example>example 1.</Example>
+	//   <Example>example 2.</Example>
+	//   <Paragraph>:normal text.</Paragraph>
+	// </Document>
+}
+
 func ExampleComplexHTML() {
 	wiki := "* Test\n"
 	wiki += "** Test\n"
 	wiki += "   _*[[hello]]*_, [[http://world][world]]\n"
+	wiki += "   : example"
 	p := Parser{}
 	r := bytes.NewBufferString(wiki)
 	p.Parse(r)
 	p.Write(NewHTMLWriter(os.Stdout), false)
 	// Output:
-	// <h1>Test</h1><h2>Test</h2><p><u><b><a href="/view/hello">hello</a></b></u>, <a href="http://world">world</a></p>
+	// <h1>Test</h1><h2>Test</h2><p><u><b><a href="/view/hello">hello</a></b></u>, <a href="http://world">world</a></p><pre>example</pre>
 }

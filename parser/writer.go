@@ -75,6 +75,8 @@ func (w HTMLWriter) StartElement(node *Element) {
 		name = "i"
 	case "Underline":
 		name = "u"
+	case "Example":
+		name = "pre"
 	}
 	if name == "" {
 		return
@@ -115,6 +117,8 @@ func (w HTMLWriter) EndElement(node *Element) {
 		name = "i"
 	case "Underline":
 		name = "u"
+	case "Example":
+		name = "pre"
 	}
 	if name == "" {
 		return

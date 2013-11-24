@@ -121,6 +121,26 @@ func (p *Parser) parseLine(r io.ByteScanner) {
 			p.closeElement("Paragraph")
 			r.UnreadByte()
 			p.parseHeader(r)
+		} else if c == ':' {
+			c, err := r.ReadByte()
+			if err != nil {
+				r.UnreadByte()
+				return
+			}
+			if c != ' ' {
+				p.openElement("Paragraph")
+				r.UnreadByte()
+				p.startElement("Text")
+				p.current.Text = ":"
+				p.current.Attr["level"] = fmt.Sprint(level)
+				p.parseTextLine(r)
+				p.endElement()
+				continue
+			}
+			p.closeElement("Paragraph")
+			p.parseExampleLine(r)
+			p.nextLine()
+			break
 		} else if c == ' ' {
 			level += 1
 			p.nextColumn()
@@ -139,6 +159,25 @@ func (p *Parser) parseLine(r io.ByteScanner) {
 			p.parseTextLine(r)
 			p.endElement()
 		}
+	}
+}
+
+// parseExampleLine parses an example line. It does not parse any wiki syntax.
+func (p *Parser) parseExampleLine(r io.ByteScanner) {
+	p.startElement("Example")
+	defer p.endElement()
+	p.startElement("Text")
+	defer p.endElement()
+	for {
+		c, err := r.ReadByte()
+		if err != nil {
+			return
+		}
+		if c == '\n' {
+			return
+		}
+		p.current.Text += string(c)
+		p.nextColumn()
 	}
 }
 
@@ -322,6 +361,7 @@ func (p *Parser) parseLink(r io.ByteScanner) {
 // WriteXML writes the parse tree to w in XML. If pretty is true, it
 // prints out as indented XML.
 func (p Parser) Write(w Writer, pretty bool) {
+	indentStr := "  "
 	if p.root == nil {
 		return
 	}
@@ -332,7 +372,7 @@ func (p Parser) Write(w Writer, pretty bool) {
 			w.Text(node)
 		}
 		for i := 0; i < level; i++ {
-			fmt.Fprint(w, "  ")
+			fmt.Fprint(w, indentStr)
 		}
 		w.StartElement(node)
 		hasText := false
@@ -357,7 +397,7 @@ func (p Parser) Write(w Writer, pretty bool) {
 				fmt.Fprintln(w)
 				writeFunc(child, level+1)
 				for i := 0; i < level; i++ {
-					fmt.Fprint(w, "  ")
+					fmt.Fprint(w, indentStr)
 				}
 			} else {
 				writeFunc(child, 0)
